@@ -159,6 +159,51 @@
             transform: translateY(0);
         }
         
+        /* Stats Styles */
+        .stats-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .stat-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-label {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .fun-fact {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(30, 144, 255, 0.2));
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            border-radius: 15px;
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         /* Shake animation for insufficient funds */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -420,13 +465,36 @@
             <button class="back-button" onclick="showScreen('mainScreen')">← Back</button>
         </div>
         <div class="screen-content">
-            <p class="placeholder-text">
-                Your statistics:<br><br>
-                Total Clicks: <span id="totalClicks">0</span><br>
-                Credits Earned: <span id="totalCredits">0</span><br>
-                Highest Speed: <span id="highSpeed">0</span> clicks/sec<br>
-                Current Multiplier: X<span id="currentMultiplier">1</span>
-            </p>
+            <div class="stats-container">
+                <div class="stat-item">
+                    <span class="stat-label">Total Clicks</span>
+                    <span class="stat-value" id="totalClicks">0</span>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">Credits Earned</span>
+                    <span class="stat-value" id="totalCredits">0</span>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">Current Multiplier</span>
+                    <span class="stat-value">X<span id="currentMultiplier">1</span></span>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">Highest Click Speed</span>
+                    <span class="stat-value"><span id="highSpeed">0</span> clicks/sec</span>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">Current Session</span>
+                    <span class="stat-value" id="sessionTime">0:00</span>
+                </div>
+                
+                <div class="fun-fact" id="funFact">
+                    Keep clicking to unlock fun facts!
+                </div>
+            </div>
         </div>
     </div>
     
@@ -434,9 +502,15 @@
         let points = 0;
         let multiplier = 1;
         let totalClicks = 0;
+        let totalCreditsEarned = 0;
         let currentScreen = 'mainScreen';
         let soundEnabled = true;
         let purchasedMultipliers = [];  // Track which multipliers have been bought
+        
+        // Stats tracking
+        let clickTimes = [];
+        let highestClickSpeed = 0;
+        let sessionStartTime = Date.now();
         
         // Create audio context for click sounds
         let audioContext;
@@ -500,7 +574,22 @@
             }
             
             totalClicks++;
-            points += multiplier;
+            const earned = multiplier;
+            points += earned;
+            totalCreditsEarned += earned;
+            
+            // Track click speed
+            const now = Date.now();
+            clickTimes.push(now);
+            
+            // Remove clicks older than 1 second
+            clickTimes = clickTimes.filter(time => now - time < 1000);
+            
+            // Update highest click speed
+            if (clickTimes.length > highestClickSpeed) {
+                highestClickSpeed = clickTimes.length;
+            }
+            
             updateDisplay();
             
             // Add feedback
@@ -512,8 +601,49 @@
             document.getElementById('score').innerHTML = 'Score: ' + points;
             document.getElementById('creditsAmount').innerHTML = points;
             document.getElementById('totalClicks').innerHTML = totalClicks;
-            document.getElementById('totalCredits').innerHTML = points;
+            document.getElementById('totalCredits').innerHTML = totalCreditsEarned;
             document.getElementById('currentMultiplier').innerHTML = multiplier;
+            document.getElementById('highSpeed').innerHTML = highestClickSpeed;
+            
+            // Update session time
+            const sessionSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const minutes = Math.floor(sessionSeconds / 60);
+            const seconds = sessionSeconds % 60;
+            document.getElementById('sessionTime').innerHTML = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update fun fact
+            updateFunFact();
+        }
+        
+        function updateFunFact() {
+            const factElement = document.getElementById('funFact');
+            if (!factElement) return;
+            
+            let fact = "";
+            
+            if (totalClicks >= 10000) {
+                fact = "🏆 LEGENDARY CLICKER! You've clicked more than 10,000 times! Your fingers have achieved enlightenment!";
+            } else if (totalClicks >= 5000) {
+                fact = "💪 ELITE STATUS! 5,000+ clicks! You're in the top tier of professional clickers!";
+            } else if (totalClicks >= 1000) {
+                fact = "🔥 1,000+ clicks! You're clicking more than a woodpecker pecks in 5 minutes!";
+            } else if (totalClicks >= 500) {
+                fact = "⭐ 500+ clicks! Your dedication is impressive. You've clicked more than most people click in a day!";
+            } else if (totalClicks >= 100) {
+                fact = "🎯 100+ clicks! You're getting serious now. Fun fact: Hummingbirds flap their wings 80 times per second!";
+            } else if (totalClicks >= 50) {
+                fact = "📈 50+ clicks! Did you know? The world record for clicks in 10 seconds is 142!";
+            } else if (totalClicks >= 10) {
+                fact = "👆 Nice start! Every journey begins with a single tap. Keep going!";
+            } else {
+                fact = "🎮 Keep clicking to unlock fun facts and achievements!";
+            }
+            
+            if (highestClickSpeed >= 10) {
+                fact += " ⚡ WOW! " + highestClickSpeed + " clicks/sec is lightning fast!";
+            }
+            
+            factElement.innerHTML = fact;
         }
         
         function updateMultiplierDisplay() {
