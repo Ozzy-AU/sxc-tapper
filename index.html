@@ -431,19 +431,35 @@
         
         // Telegram WebApp initialization
         if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            
             // Expand to full height
-            Telegram.WebApp.expand();
+            tg.expand();
             
-            // Set viewport height
-            Telegram.WebApp.ready();
+            // Set viewport height and theme
+            tg.ready();
+            tg.setHeaderColor('#1a1f2e');
+            tg.setBackgroundColor('#1a1f2e');
             
-            // Ensure full height after a small delay
-            setTimeout(() => {
-                Telegram.WebApp.expand();
-            }, 100);
+            // Multiple expansion attempts
+            setTimeout(() => tg.expand(), 50);
+            setTimeout(() => tg.expand(), 150);
+            setTimeout(() => tg.expand(), 300);
             
-            // Disable vertical swipes that might interfere
-            Telegram.WebApp.disableVerticalSwipes();
+            // Try to expand on any interaction
+            document.addEventListener('click', () => {
+                tg.expand();
+            }, { once: true });
+            
+            // Disable vertical swipes
+            tg.disableVerticalSwipes();
+            
+            // Enable closing confirmation if score > 0
+            window.addEventListener('beforeunload', (e) => {
+                if (points > 0) {
+                    tg.showConfirm('Your progress will be lost. Exit anyway?');
+                }
+            });
         }
         
         // Fix viewport height for mobile browsers
