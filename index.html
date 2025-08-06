@@ -323,11 +323,71 @@
         let multiplier = 1;
         let totalClicks = 0;
         let currentScreen = 'mainScreen';
+        let soundEnabled = true;
+        
+        // Create audio context for click sounds
+        let audioContext;
+        
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        function playClickSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            // Create a simple click sound
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+        
+        function playNavSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            // Create a different sound for navigation
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 600;
+            oscillator.type = 'triangle';
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+        }
+        
+        function vibrate(duration = 10) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(duration);
+            }
+        }
         
         function addPoint() {
             totalClicks++;
             points += multiplier;
             updateDisplay();
+            
+            // Add feedback
+            playClickSound();
+            vibrate(10);
         }
         
         function updateDisplay() {
@@ -343,6 +403,9 @@
         }
         
         function showScreen(screenId) {
+            // Initialize audio on first interaction
+            initAudio();
+            
             // Hide all screens
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
@@ -356,10 +419,39 @@
             if (screenId === 'statsScreen') {
                 updateDisplay();
             }
+            
+            // Play navigation sound and vibrate
+            playNavSound();
+            vibrate(5);
         }
         
         // Initialize display
         updateDisplay();
+        
+        // Add sound toggle button (optional - appears in top-left)
+        document.addEventListener('DOMContentLoaded', function() {
+            const soundToggle = document.createElement('button');
+            soundToggle.innerHTML = '🔊';
+            soundToggle.style.cssText = `
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+                cursor: pointer;
+                z-index: 1000;
+            `;
+            soundToggle.onclick = function() {
+                soundEnabled = !soundEnabled;
+                soundToggle.innerHTML = soundEnabled ? '🔊' : '🔇';
+                vibrate(20);
+            };
+            document.body.appendChild(soundToggle);
+        });
     </script>
 </body>
 </html>
