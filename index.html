@@ -159,7 +159,12 @@
             transform: translateY(0);
         }
         
-        /* Glow animation for the tap button */
+        /* Shake animation for insufficient funds */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
         @keyframes pulse-glow {
             0% {
                 box-shadow: 
@@ -244,6 +249,82 @@
             font-weight: bold;
             color: #FFD700;
         }
+        
+        /* Shop Styles */
+        .shop-items {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .shop-item {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .shop-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(5px);
+        }
+        
+        .shop-item.purchased {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.5);
+            opacity: 0.7;
+            cursor: default;
+        }
+        
+        .shop-item.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .shop-item.locked:hover {
+            transform: none;
+        }
+        
+        .item-icon {
+            font-size: 40px;
+            width: 60px;
+            text-align: center;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+        }
+        
+        .item-description {
+            margin: 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .item-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+        
+        .shop-item.purchased .item-price {
+            color: #00ff88;
+        }
+        
+        .shop-item.purchased .item-price::after {
+            content: " ✓";
+        }
     </style>
 </head>
 <body>
@@ -276,13 +357,43 @@
             <button class="back-button" onclick="showScreen('mainScreen')">← Back</button>
         </div>
         <div class="screen-content">
-            <p class="placeholder-text">
-                Shop items coming soon!<br><br>
-                • X2 Multiplier - 100 credits<br>
-                • X3 Multiplier - 500 credits<br>
-                • X5 Multiplier - 2000 credits<br>
-                • Visual themes - 500+ credits
-            </p>
+            <div class="shop-items">
+                <div class="shop-item" id="multiplier2" onclick="purchaseMultiplier(2, 50)">
+                    <div class="item-icon">⚡</div>
+                    <div class="item-info">
+                        <h3>X2 Multiplier</h3>
+                        <p class="item-description">Double your earnings!</p>
+                    </div>
+                    <div class="item-price">💰 50</div>
+                </div>
+                
+                <div class="shop-item" id="multiplier3" onclick="purchaseMultiplier(3, 150)">
+                    <div class="item-icon">🔥</div>
+                    <div class="item-info">
+                        <h3>X3 Multiplier</h3>
+                        <p class="item-description">Triple your earnings!</p>
+                    </div>
+                    <div class="item-price">💰 150</div>
+                </div>
+                
+                <div class="shop-item" id="multiplier4" onclick="purchaseMultiplier(4, 500)">
+                    <div class="item-icon">⭐</div>
+                    <div class="item-info">
+                        <h3>X4 Multiplier</h3>
+                        <p class="item-description">Quadruple your power!</p>
+                    </div>
+                    <div class="item-price">💰 500</div>
+                </div>
+                
+                <div class="shop-item" id="multiplier5" onclick="purchaseMultiplier(5, 1000)">
+                    <div class="item-icon">💎</div>
+                    <div class="item-info">
+                        <h3>X5 Multiplier</h3>
+                        <p class="item-description">Maximum earning power!</p>
+                    </div>
+                    <div class="item-price">💰 1000</div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -325,6 +436,7 @@
         let totalClicks = 0;
         let currentScreen = 'mainScreen';
         let soundEnabled = true;
+        let purchasedMultipliers = [];  // Track which multipliers have been bought
         
         // Create audio context for click sounds
         let audioContext;
@@ -406,6 +518,88 @@
         
         function updateMultiplierDisplay() {
             document.querySelector('.boost-pill').innerHTML = 'X' + multiplier;
+            document.getElementById('currentMultiplier').innerHTML = multiplier;
+        }
+        
+        function purchaseMultiplier(mult, price) {
+            // Check if already purchased
+            if (purchasedMultipliers.includes(mult)) {
+                vibrate(50);
+                return;
+            }
+            
+            // Check if player has enough credits
+            if (points >= price) {
+                // Deduct credits
+                points -= price;
+                
+                // Update multiplier
+                multiplier = mult;
+                
+                // Mark as purchased
+                purchasedMultipliers.push(mult);
+                
+                // Update displays
+                updateDisplay();
+                updateMultiplierDisplay();
+                updateShopDisplay();
+                
+                // Feedback
+                playPurchaseSound();
+                vibrate(30);
+                
+                // Visual feedback
+                const item = document.getElementById('multiplier' + mult);
+                item.classList.add('purchased');
+            } else {
+                // Not enough credits - shake animation
+                vibrate(100);
+                const item = document.getElementById('multiplier' + mult);
+                item.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    item.style.animation = '';
+                }, 500);
+            }
+        }
+        
+        function updateShopDisplay() {
+            // Update shop items based on what's purchased and what's affordable
+            [2, 3, 4, 5].forEach(mult => {
+                const prices = {2: 50, 3: 150, 4: 500, 5: 1000};
+                const item = document.getElementById('multiplier' + mult);
+                
+                if (purchasedMultipliers.includes(mult)) {
+                    item.classList.add('purchased');
+                    item.classList.remove('locked');
+                } else if (points < prices[mult]) {
+                    item.classList.add('locked');
+                    item.classList.remove('purchased');
+                } else {
+                    item.classList.remove('locked', 'purchased');
+                }
+            });
+        }
+        
+        function playPurchaseSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            // Create a success sound
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Play two quick notes for success
+            oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C5
+            oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1); // E5
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
         }
         
         function showScreen(screenId) {
@@ -424,6 +618,11 @@
             // Update stats when showing stats screen
             if (screenId === 'statsScreen') {
                 updateDisplay();
+            }
+            
+            // Update shop when showing shop screen
+            if (screenId === 'shopScreen') {
+                updateShopDisplay();
             }
             
             // Play navigation sound and vibrate
