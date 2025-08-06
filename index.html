@@ -555,6 +555,44 @@
                     </div>
                     <div class="item-price">💰 1000</div>
                 </div>
+                
+                <div class="shop-section-title">🎨 Themes (Unlock at 500+ credits)</div>
+                
+                <div class="shop-item theme-item" id="themeNeon" onclick="purchaseTheme('neon', 500)">
+                    <div class="item-icon">🌆</div>
+                    <div class="item-info">
+                        <h3>Neon City</h3>
+                        <p class="item-description">Cyberpunk vibes with neon glow</p>
+                    </div>
+                    <div class="item-price">💰 500</div>
+                </div>
+                
+                <div class="shop-item theme-item" id="themeSpace" onclick="purchaseTheme('space', 750)">
+                    <div class="item-icon">🚀</div>
+                    <div class="item-info">
+                        <h3>Space Explorer</h3>
+                        <p class="item-description">Tap among the stars</p>
+                    </div>
+                    <div class="item-price">💰 750</div>
+                </div>
+                
+                <div class="shop-item theme-item" id="themeForest" onclick="purchaseTheme('forest', 600)">
+                    <div class="item-icon">🌲</div>
+                    <div class="item-info">
+                        <h3>Mystic Forest</h3>
+                        <p class="item-description">Natural and calming green theme</p>
+                    </div>
+                    <div class="item-price">💰 600</div>
+                </div>
+                
+                <div class="shop-item theme-item" id="themeLava" onclick="purchaseTheme('lava', 1500)">
+                    <div class="item-icon">🌋</div>
+                    <div class="item-info">
+                        <h3>Lava Core</h3>
+                        <p class="item-description">Intense red and orange flames</p>
+                    </div>
+                    <div class="item-price">💰 1500</div>
+                </div>
             </div>
         </div>
     </div>
@@ -667,6 +705,10 @@
         };
         let lastRefillTime = Date.now();
         let refillInterval = 5 * 60 * 1000; // 5 minutes in milliseconds
+        
+        // Themes system
+        let purchasedThemes = [];
+        let activeTheme = 'default';
         
         // Create audio context for click sounds
         let audioContext;
@@ -1023,6 +1065,76 @@
             }
         }
         
+        function purchaseTheme(themeName, price) {
+            // Check if already purchased
+            if (purchasedThemes.includes(themeName)) {
+                // If purchased, just activate it
+                activateTheme(themeName);
+                return;
+            }
+            
+            // Check if player has enough credits
+            if (points >= price) {
+                // Deduct credits
+                points -= price;
+                
+                // Mark as purchased
+                purchasedThemes.push(themeName);
+                
+                // Activate the theme
+                activateTheme(themeName);
+                
+                // Update displays
+                updateDisplay();
+                updateShopDisplay();
+                
+                // Feedback
+                playPurchaseSound();
+                vibrate(30);
+            } else {
+                // Not enough credits
+                vibrate(100);
+                const item = document.getElementById('theme' + themeName.charAt(0).toUpperCase() + themeName.slice(1));
+                item.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    item.style.animation = '';
+                }, 500);
+            }
+        }
+        
+        function activateTheme(themeName) {
+            // Remove all theme classes
+            document.body.className = document.body.className.replace(/theme-\w+/g, '');
+            
+            // Add new theme class
+            if (themeName !== 'default') {
+                document.body.classList.add('theme-' + themeName);
+            }
+            
+            activeTheme = themeName;
+            updateThemeDisplay();
+            
+            // Feedback
+            vibrate(20);
+        }
+        
+        function updateThemeDisplay() {
+            // Update all theme items to show which is active
+            ['neon', 'space', 'forest', 'lava'].forEach(theme => {
+                const item = document.getElementById('theme' + theme.charAt(0).toUpperCase() + theme.slice(1));
+                if (!item) return;
+                
+                if (purchasedThemes.includes(theme)) {
+                    item.classList.add('purchased');
+                    if (activeTheme === theme) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                }
+            });
+        }
+        
         function updateShopDisplay() {
             // Update shop items based on what's purchased and what's affordable
             [2, 3, 4, 5].forEach(mult => {
@@ -1037,6 +1149,22 @@
                     item.classList.remove('purchased');
                 } else {
                     item.classList.remove('locked', 'purchased');
+                }
+            });
+            
+            // Update theme items
+            updateThemeDisplay();
+            
+            // Lock/unlock themes based on credits
+            ['neon', 'space', 'forest', 'lava'].forEach(theme => {
+                const prices = {neon: 500, space: 750, forest: 600, lava: 1500};
+                const item = document.getElementById('theme' + theme.charAt(0).toUpperCase() + theme.slice(1));
+                if (!item) return;
+                
+                if (!purchasedThemes.includes(theme) && points < prices[theme]) {
+                    item.classList.add('locked');
+                } else {
+                    item.classList.remove('locked');
                 }
             });
         }
