@@ -89,6 +89,15 @@
                 inset 0 0 20px rgba(255, 255, 255, 0.2);
         }
         
+        .tap-button.turbo-active {
+            background: linear-gradient(135deg, #ff6b00, #ff9500);
+            border-color: rgba(255, 149, 0, 0.5);
+            box-shadow: 
+                0 0 80px rgba(255, 149, 0, 0.8),
+                inset 0 0 30px rgba(255, 255, 255, 0.3);
+            animation: pulse-glow 0.5s infinite;
+        }
+        
         .tap-button:hover {
             transform: scale(1.05);
             box-shadow: 
@@ -202,6 +211,114 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        
+        /* Boosts Styles */
+        .boosts-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .boost-item {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .boost-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(5px);
+        }
+        
+        .boost-item.active {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.1));
+            border-color: #00ff88;
+            animation: pulse 1s infinite;
+        }
+        
+        .boost-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .boost-item.disabled:hover {
+            transform: none;
+        }
+        
+        .boost-icon {
+            font-size: 40px;
+            width: 60px;
+            text-align: center;
+        }
+        
+        .boost-info {
+            flex: 1;
+        }
+        
+        .boost-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+        }
+        
+        .boost-description {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .boost-status {
+            margin: 0;
+            font-size: 12px;
+            color: #00ff88;
+        }
+        
+        .boost-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 255, 136, 0.2);
+            border: 2px solid #00ff88;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .boost-refill {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(138, 43, 226, 0.1);
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .boost-refill p {
+            margin: 5px 0;
+        }
+        
+        #refillTimer {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
         }
         
         /* Shake animation for insufficient funds */
@@ -449,12 +566,42 @@
             <button class="back-button" onclick="showScreen('mainScreen')">← Back</button>
         </div>
         <div class="screen-content">
-            <p class="placeholder-text">
-                Power-ups coming soon!<br><br>
-                🔥 Turbo Click - 10s double speed<br>
-                ⏰ Auto Click - 5s auto-tapping<br>
-                💣 Click Bomb - Instant 25 credits
-            </p>
+            <div class="boosts-container">
+                <div class="boost-item" onclick="activateBoost('turbo')">
+                    <div class="boost-icon">🔥</div>
+                    <div class="boost-info">
+                        <h3>Turbo Click</h3>
+                        <p class="boost-description">2X points for 10 seconds!</p>
+                        <p class="boost-status" id="turboStatus">Ready to use!</p>
+                    </div>
+                    <div class="boost-count" id="turboCount">3</div>
+                </div>
+                
+                <div class="boost-item" onclick="activateBoost('auto')">
+                    <div class="boost-icon">⏰</div>
+                    <div class="boost-info">
+                        <h3>Auto Click</h3>
+                        <p class="boost-description">Auto-tap 5 times/sec for 5 seconds!</p>
+                        <p class="boost-status" id="autoStatus">Ready to use!</p>
+                    </div>
+                    <div class="boost-count" id="autoCount">2</div>
+                </div>
+                
+                <div class="boost-item" onclick="activateBoost('bomb')">
+                    <div class="boost-icon">💣</div>
+                    <div class="boost-info">
+                        <h3>Click Bomb</h3>
+                        <p class="boost-description">Instant 50 credits!</p>
+                        <p class="boost-status" id="bombStatus">Ready to use!</p>
+                    </div>
+                    <div class="boost-count" id="bombCount">1</div>
+                </div>
+                
+                <div class="boost-refill">
+                    <p>🎁 Free boosts refill every 5 minutes!</p>
+                    <p>Next refill in: <span id="refillTimer">5:00</span></p>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -512,6 +659,15 @@
         let highestClickSpeed = 0;
         let sessionStartTime = Date.now();
         
+        // Boosts system
+        let boosts = {
+            turbo: { count: 3, active: false, endTime: 0 },
+            auto: { count: 2, active: false, endTime: 0, interval: null },
+            bomb: { count: 1, active: false }
+        };
+        let lastRefillTime = Date.now();
+        let refillInterval = 5 * 60 * 1000; // 5 minutes in milliseconds
+        
         // Create audio context for click sounds
         let audioContext;
         
@@ -567,35 +723,210 @@
             }
         }
         
-        function addPoint() {
+        function addPoint(isAutoClick = false) {
             // Initialize audio on first tap if needed
             if (!audioContext) {
                 initAudio();
             }
             
             totalClicks++;
-            const earned = multiplier;
+            let earned = multiplier;
+            
+            // Apply turbo boost if active
+            if (boosts.turbo.active && Date.now() < boosts.turbo.endTime) {
+                earned *= 2;
+            }
+            
             points += earned;
             totalCreditsEarned += earned;
             
-            // Track click speed
-            const now = Date.now();
-            clickTimes.push(now);
-            
-            // Remove clicks older than 1 second
-            clickTimes = clickTimes.filter(time => now - time < 1000);
-            
-            // Update highest click speed
-            if (clickTimes.length > highestClickSpeed) {
-                highestClickSpeed = clickTimes.length;
+            // Track click speed (only for manual clicks)
+            if (!isAutoClick) {
+                const now = Date.now();
+                clickTimes.push(now);
+                
+                // Remove clicks older than 1 second
+                clickTimes = clickTimes.filter(time => now - time < 1000);
+                
+                // Update highest click speed
+                if (clickTimes.length > highestClickSpeed) {
+                    highestClickSpeed = clickTimes.length;
+                }
+                
+                // Add feedback
+                playClickSound();
+                vibrate(10);
             }
             
             updateDisplay();
-            
-            // Add feedback
-            playClickSound();
-            vibrate(10);
         }
+        
+        function activateBoost(type) {
+            const boost = boosts[type];
+            
+            // Check if boost is available
+            if (boost.count <= 0) {
+                vibrate(50);
+                return;
+            }
+            
+            // Check if boost is already active
+            if (boost.active && type !== 'bomb') {
+                vibrate(50);
+                return;
+            }
+            
+            // Activate the boost
+            boost.count--;
+            
+            switch(type) {
+                case 'turbo':
+                    boost.active = true;
+                    boost.endTime = Date.now() + 10000; // 10 seconds
+                    document.getElementById('turboStatus').innerHTML = 'ACTIVE! 🔥';
+                    
+                    // Auto-return to main screen
+                    setTimeout(() => {
+                        showScreen('mainScreen');
+                        // Add visual indicator to main button
+                        document.querySelector('.tap-button').classList.add('turbo-active');
+                    }, 300);
+                    
+                    // Set timeout to deactivate
+                    setTimeout(() => {
+                        boost.active = false;
+                        document.getElementById('turboStatus').innerHTML = boost.count > 0 ? 'Ready to use!' : 'No boosts left';
+                        document.querySelector('.tap-button').classList.remove('turbo-active');
+                        updateBoostsDisplay();
+                    }, 10000);
+                    break;
+                    
+                case 'auto':
+                    boost.active = true;
+                    boost.endTime = Date.now() + 5000; // 5 seconds
+                    document.getElementById('autoStatus').innerHTML = 'AUTO-CLICKING! ⏰';
+                    
+                    // Auto-return to main screen
+                    setTimeout(() => showScreen('mainScreen'), 300);
+                    
+                    // Start auto-clicking
+                    boost.interval = setInterval(() => {
+                        if (Date.now() < boost.endTime) {
+                            addPoint(true);
+                        } else {
+                            clearInterval(boost.interval);
+                            boost.active = false;
+                            document.getElementById('autoStatus').innerHTML = boost.count > 0 ? 'Ready to use!' : 'No boosts left';
+                            updateBoostsDisplay();
+                        }
+                    }, 200); // 5 clicks per second
+                    break;
+                    
+                case 'bomb':
+                    // Instant 50 credits
+                    points += 50;
+                    totalCreditsEarned += 50;
+                    updateDisplay();
+                    
+                    // Visual feedback
+                    playBombSound();
+                    vibrate(100);
+                    
+                    // Update status
+                    document.getElementById('bombStatus').innerHTML = boost.count > 0 ? 'Ready to use!' : 'No boosts left';
+                    
+                    // Auto-return to main screen
+                    setTimeout(() => showScreen('mainScreen'), 300);
+                    break;
+            }
+            
+            updateBoostsDisplay();
+            playBoostSound();
+            vibrate(30);
+        }
+        
+        function updateBoostsDisplay() {
+            document.getElementById('turboCount').innerHTML = boosts.turbo.count;
+            document.getElementById('autoCount').innerHTML = boosts.auto.count;
+            document.getElementById('bombCount').innerHTML = boosts.bomb.count;
+            
+            // Update disabled state
+            ['turbo', 'auto', 'bomb'].forEach((type, index) => {
+                const item = document.querySelectorAll('.boost-item')[index];
+                if (boosts[type].count <= 0) {
+                    item.classList.add('disabled');
+                } else {
+                    item.classList.remove('disabled');
+                }
+            });
+        }
+        
+        function playBoostSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+            oscillator.type = 'sawtooth';
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        function playBombSound() {
+            if (!soundEnabled || !audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(30, audioContext.currentTime + 0.5);
+            oscillator.type = 'sawtooth';
+            
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+        
+        // Refill timer
+        function updateRefillTimer() {
+            const now = Date.now();
+            const timeSinceRefill = now - lastRefillTime;
+            const timeUntilRefill = refillInterval - timeSinceRefill;
+            
+            if (timeUntilRefill <= 0) {
+                // Refill boosts
+                boosts.turbo.count = Math.min(boosts.turbo.count + 1, 3);
+                boosts.auto.count = Math.min(boosts.auto.count + 1, 2);
+                boosts.bomb.count = Math.min(boosts.bomb.count + 1, 1);
+                lastRefillTime = now;
+                updateBoostsDisplay();
+            }
+            
+            // Update timer display
+            const minutes = Math.floor(timeUntilRefill / 60000);
+            const seconds = Math.floor((timeUntilRefill % 60000) / 1000);
+            const timerElement = document.getElementById('refillTimer');
+            if (timerElement) {
+                timerElement.innerHTML = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        // Update refill timer every second
+        setInterval(updateRefillTimer, 1000);
         
         function updateDisplay() {
             document.getElementById('score').innerHTML = 'Score: ' + points;
@@ -753,6 +1084,11 @@
             // Update shop when showing shop screen
             if (screenId === 'shopScreen') {
                 updateShopDisplay();
+            }
+            
+            // Update boosts when showing boosts screen
+            if (screenId === 'boostsScreen') {
+                updateBoostsDisplay();
             }
             
             // Play navigation sound and vibrate
