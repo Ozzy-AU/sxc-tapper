@@ -32,9 +32,33 @@
             touch-action: manipulation;
         }
         
-        .game-container {
+        .screen {
             width: 100%;
             max-width: 400px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .screen.active {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Main Game Screen Styles */
+        .game-container {
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -156,54 +180,186 @@
         .tap-button {
             animation: pulse-glow 2s infinite;
         }
+        
+        /* Sub-screen styles */
+        .sub-screen-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 0 10px;
+        }
+        
+        .screen-title {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 10px 20px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-5px);
+        }
+        
+        .screen-content {
+            width: 100%;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .placeholder-text {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            line-height: 1.6;
+        }
+        
+        .credits-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFD700;
+        }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1 id="score">Score: 0</h1>
-        
-        <button class="tap-button" onclick="addPoint()">CLICK ME!</button>
-        
-        <div class="boost-pill">X1</div>
-        
-        <div class="nav-buttons">
-            <button class="nav-button shop" onclick="showShop()">Shop</button>
-            <button class="nav-button boosts" onclick="showBoosts()">Boosts</button>
-            <button class="nav-button stats" onclick="showStats()">Stats</button>
+    <!-- Credits Display (always visible) -->
+    <div class="credits-display">
+        💰 <span id="creditsAmount">0</span>
+    </div>
+
+    <!-- Main Game Screen -->
+    <div id="mainScreen" class="screen active">
+        <div class="game-container">
+            <h1 id="score">Score: 0</h1>
+            
+            <button class="tap-button" onclick="addPoint()">CLICK ME!</button>
+            
+            <div class="boost-pill">X1</div>
+            
+            <div class="nav-buttons">
+                <button class="nav-button shop" onclick="showScreen('shopScreen')">Shop</button>
+                <button class="nav-button boosts" onclick="showScreen('boostsScreen')">Boosts</button>
+                <button class="nav-button stats" onclick="showScreen('statsScreen')">Stats</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Shop Screen -->
+    <div id="shopScreen" class="screen">
+        <div class="sub-screen-header">
+            <h2 class="screen-title">🛒 Shop</h2>
+            <button class="back-button" onclick="showScreen('mainScreen')">← Back</button>
+        </div>
+        <div class="screen-content">
+            <p class="placeholder-text">
+                Shop items coming soon!<br><br>
+                • X2 Multiplier - 100 credits<br>
+                • X3 Multiplier - 500 credits<br>
+                • X5 Multiplier - 2000 credits<br>
+                • Visual themes - 500+ credits
+            </p>
+        </div>
+    </div>
+    
+    <!-- Boosts Screen -->
+    <div id="boostsScreen" class="screen">
+        <div class="sub-screen-header">
+            <h2 class="screen-title">🚀 Boosts</h2>
+            <button class="back-button" onclick="showScreen('mainScreen')">← Back</button>
+        </div>
+        <div class="screen-content">
+            <p class="placeholder-text">
+                Power-ups coming soon!<br><br>
+                🔥 Turbo Click - 10s double speed<br>
+                ⏰ Auto Click - 5s auto-tapping<br>
+                💣 Click Bomb - Instant 25 credits
+            </p>
+        </div>
+    </div>
+    
+    <!-- Stats Screen -->
+    <div id="statsScreen" class="screen">
+        <div class="sub-screen-header">
+            <h2 class="screen-title">📊 Stats</h2>
+            <button class="back-button" onclick="showScreen('mainScreen')">← Back</button>
+        </div>
+        <div class="screen-content">
+            <p class="placeholder-text">
+                Your statistics:<br><br>
+                Total Clicks: <span id="totalClicks">0</span><br>
+                Credits Earned: <span id="totalCredits">0</span><br>
+                Highest Speed: <span id="highSpeed">0</span> clicks/sec<br>
+                Current Multiplier: X<span id="currentMultiplier">1</span>
+            </p>
         </div>
     </div>
     
     <script>
         let points = 0;
-        let multiplier = 1;  // This will only change when items are purchased from shop
+        let multiplier = 1;
+        let totalClicks = 0;
+        let currentScreen = 'mainScreen';
         
         function addPoint() {
+            totalClicks++;
             points += multiplier;
+            updateDisplay();
+        }
+        
+        function updateDisplay() {
             document.getElementById('score').innerHTML = 'Score: ' + points;
+            document.getElementById('creditsAmount').innerHTML = points;
+            document.getElementById('totalClicks').innerHTML = totalClicks;
+            document.getElementById('totalCredits').innerHTML = points;
+            document.getElementById('currentMultiplier').innerHTML = multiplier;
         }
         
         function updateMultiplierDisplay() {
-            // This function will update the boost pill display
-            // It will be called when purchases are made in the shop (Phase 4)
             document.querySelector('.boost-pill').innerHTML = 'X' + multiplier;
         }
         
-        // Placeholder functions for navigation - will be implemented in Phase 2
-        function showShop() {
-            console.log("Shop clicked - to be implemented");
-            // Will show shop screen in Phase 2
-            // This is where multiplier purchases will happen
+        function showScreen(screenId) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Show selected screen
+            document.getElementById(screenId).classList.add('active');
+            currentScreen = screenId;
+            
+            // Update stats when showing stats screen
+            if (screenId === 'statsScreen') {
+                updateDisplay();
+            }
         }
         
-        function showBoosts() {
-            console.log("Boosts clicked - to be implemented");
-            // Will show boosts screen in Phase 2
-        }
-        
-        function showStats() {
-            console.log("Stats clicked - to be implemented");
-            // Will show stats screen in Phase 2
-        }
+        // Initialize display
+        updateDisplay();
     </script>
 </body>
 </html>
