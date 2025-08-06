@@ -27,6 +27,7 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            min-height: calc(var(--vh, 1vh) * 100);
             padding: 20px;
             overflow: hidden;
             touch-action: manipulation;
@@ -428,8 +429,39 @@
         // Initialize display
         updateDisplay();
         
+        // Telegram WebApp initialization
+        if (window.Telegram && window.Telegram.WebApp) {
+            // Expand to full height
+            Telegram.WebApp.expand();
+            
+            // Set viewport height
+            Telegram.WebApp.ready();
+            
+            // Ensure full height after a small delay
+            setTimeout(() => {
+                Telegram.WebApp.expand();
+            }, 100);
+            
+            // Disable vertical swipes that might interfere
+            Telegram.WebApp.disableVerticalSwipes();
+        }
+        
+        // Fix viewport height for mobile browsers
+        function setViewportHeight() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        
+        setViewportHeight();
+        window.addEventListener('resize', setViewportHeight);
+        
         // Add sound toggle button (optional - appears in top-left)
         document.addEventListener('DOMContentLoaded', function() {
+            // Force another expand after DOM loads
+            if (window.Telegram && window.Telegram.WebApp) {
+                Telegram.WebApp.expand();
+            }
+            
             const soundToggle = document.createElement('button');
             soundToggle.innerHTML = '🔊';
             soundToggle.style.cssText = `
