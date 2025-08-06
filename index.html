@@ -382,6 +382,11 @@
         }
         
         function addPoint() {
+            // Initialize audio on first tap if needed
+            if (!audioContext) {
+                initAudio();
+            }
+            
             totalClicks++;
             points += multiplier;
             updateDisplay();
