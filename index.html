@@ -805,6 +805,108 @@
         // Create audio context for click sounds
         let audioContext;
         
+        // Game data saving/loading
+        function saveGameData() {
+            const gameData = {
+                points: points,
+                multiplier: multiplier,
+                totalClicks: totalClicks,
+                totalCreditsEarned: totalCreditsEarned,
+                purchasedMultipliers: purchasedMultipliers,
+                purchasedThemes: purchasedThemes,
+                activeTheme: activeTheme,
+                highestClickSpeed: highestClickSpeed,
+                boosts: {
+                    turbo: boosts.turbo.count,
+                    auto: boosts.auto.count,
+                    bomb: boosts.bomb.count
+                },
+                lastSave: Date.now()
+            };
+            
+            // Try Telegram CloudStorage first
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.CloudStorage) {
+                window.Telegram.WebApp.CloudStorage.setItem('gameData', JSON.stringify(gameData), (error, result) => {
+                    if (error) {
+                        console.log('CloudStorage save failed, using localStorage');
+                        // Fallback to localStorage
+                        localStorage.setItem('sxcTapperData', JSON.stringify(gameData));
+                    } else {
+                        console.log('Game saved to CloudStorage!');
+                    }
+                });
+            } else {
+                // Fallback to localStorage for testing outside Telegram
+                localStorage.setItem('sxcTapperData', JSON.stringify(gameData));
+                console.log('Game saved to localStorage!');
+            }
+        }
+        
+        function loadGameData() {
+            // Try Telegram CloudStorage first
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.CloudStorage) {
+                window.Telegram.WebApp.CloudStorage.getItem('gameData', (error, value) => {
+                    if (!error && value) {
+                        applyGameData(JSON.parse(value));
+                        console.log('Game loaded from CloudStorage!');
+                    } else {
+                        // Try localStorage as fallback
+                        loadFromLocalStorage();
+                    }
+                });
+            } else {
+                // Fallback to localStorage for testing outside Telegram
+                loadFromLocalStorage();
+            }
+        }
+        
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('sxcTapperData');
+            if (savedData) {
+                applyGameData(JSON.parse(savedData));
+                console.log('Game loaded from localStorage!');
+            }
+        }
+        
+        function applyGameData(data) {
+            if (data.points !== undefined) points = data.points;
+            if (data.multiplier !== undefined) multiplier = data.multiplier;
+            if (data.totalClicks !== undefined) totalClicks = data.totalClicks;
+            if (data.totalCreditsEarned !== undefined) totalCreditsEarned = data.totalCreditsEarned;
+            if (data.purchasedMultipliers) purchasedMultipliers = data.purchasedMultipliers;
+            if (data.purchasedThemes) purchasedThemes = data.purchasedThemes;
+            if (data.activeTheme) {
+                activeTheme = data.activeTheme;
+                if (activeTheme !== 'default') {
+                    document.body.classList.add('theme-' + activeTheme);
+                }
+            }
+            if (data.highestClickSpeed !== undefined) highestClickSpeed = data.highestClickSpeed;
+            if (data.boosts) {
+                boosts.turbo.count = data.boosts.turbo || 3;
+                boosts.auto.count = data.boosts.auto || 2;
+                boosts.bomb.count = data.boosts.bomb || 1;
+            }
+            
+            // Update all displays
+            updateDisplay();
+            updateMultiplierDisplay();
+            updateShopDisplay();
+            updateBoostsDisplay();
+            updateThemeDisplay();
+        }
+        
+        // Auto-save every 10 seconds
+        setInterval(saveGameData, 10000);
+        
+        // Save when leaving the page
+        window.addEventListener('beforeunload', saveGameData);
+        
+        // Save after important actions
+        function saveAfterAction() {
+            setTimeout(saveGameData, 100);
+        }
+        
         function initAudio() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -893,6 +995,11 @@
             }
             
             updateDisplay();
+            
+            // Save periodically (every 50 clicks)
+            if (totalClicks % 50 === 0) {
+                saveGameData();
+            }
         }
         
         function activateBoost(type) {
@@ -1139,6 +1246,9 @@
                 updateMultiplierDisplay();
                 updateShopDisplay();
                 
+                // Save after purchase
+                saveAfterAction();
+                
                 // Feedback
                 playPurchaseSound();
                 vibrate(30);
@@ -1179,6 +1289,9 @@
                 // Update displays
                 updateDisplay();
                 updateShopDisplay();
+                
+                // Save after theme purchase
+                saveAfterAction();
                 
                 // Feedback
                 playPurchaseSound();
@@ -1321,6 +1434,9 @@
         
         // Splash screen logic
         window.addEventListener('DOMContentLoaded', function() {
+            // Load saved game data first
+            loadGameData();
+            
             // Show splash screen for 2.5 seconds
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
