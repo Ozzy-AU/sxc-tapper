@@ -431,6 +431,69 @@
             font-size: 18px;
             font-weight: bold;
             color: #FFD700;
+            z-index: 100;
+        }
+        
+        /* Splash Screen Styles */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1f2e;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .splash-screen.active {
+            display: flex;
+        }
+        
+        .splash-image {
+            max-width: 80%;
+            max-height: 60%;
+            object-fit: contain;
+            margin-bottom: 40px;
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
+            }
+            50% {
+                filter: drop-shadow(0 0 40px rgba(0, 255, 136, 0.8));
+            }
+        }
+        
+        .splash-loader {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .loader-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ff44);
+            border-radius: 2px;
+            animation: loading 2s ease forwards;
+        }
+        
+        @keyframes loading {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
         }
         
         /* Shop Styles */
@@ -511,8 +574,16 @@
     </style>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen active">
+        <img src="image/sxc-splash-tester.png" alt="SXC Tapper" class="splash-image">
+        <div class="splash-loader">
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
     <!-- Credits Display (always visible) -->
-    <div class="credits-display">
+    <div class="credits-display" style="display: none;">
         💰 <span id="creditsAmount">0</span>
     </div>
 
@@ -1247,6 +1318,25 @@
         
         // Initialize display
         updateDisplay();
+        
+        // Splash screen logic
+        window.addEventListener('DOMContentLoaded', function() {
+            // Show splash screen for 2.5 seconds
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                const creditsDisplay = document.querySelector('.credits-display');
+                
+                // Fade out splash screen
+                splash.style.animation = 'fadeOut 0.5s ease';
+                
+                setTimeout(() => {
+                    splash.classList.remove('active');
+                    splash.style.display = 'none';
+                    // Show credits display after splash
+                    creditsDisplay.style.display = 'block';
+                }, 500);
+            }, 2500);
+        });
         
         // Telegram WebApp initialization
         if (window.Telegram && window.Telegram.WebApp) {
